@@ -107,17 +107,23 @@ class DrawingEditor extends AnnotationEditor {
   #createDrawOutlines({ drawOutlines, drawId, drawingOptions }) {
     this.#drawOutlines = drawOutlines;
     this._drawingOptions ||= drawingOptions;
-    if (!this.annotationElementId) {
-      this._uiManager.a11yAlert(`pdfjs-editor-${this.editorType}-added-alert`);
-    }
+    // Disable a11yAlert to avoid missing translation warnings
+    // if (!this.annotationElementId) {
+    //   this._uiManager.a11yAlert(`pdfjs-editor-${this.editorType}-added-alert`);
+    // }
 
     if (drawId >= 0) {
       this._drawId = drawId;
       // We need to redraw the drawing because we changed the coordinates to be
       // in the box coordinate system.
+      // Merge drawingOptions SVG properties (including fill/stroke colors) with drawer properties
+      const mergedProperties = DrawingEditor._mergeSVGProperties(
+        this._drawingOptions.toSVGProperties(),
+        drawOutlines.defaultProperties
+      );
       this.parent.drawLayer.finalizeDraw(
         drawId,
-        drawOutlines.defaultProperties
+        mergedProperties
       );
     } else {
       // We create a new drawing.

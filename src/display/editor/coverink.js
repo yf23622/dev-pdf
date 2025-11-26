@@ -1,23 +1,24 @@
-import { AnnotationEditorType, AnnotationEditorParamsType, Util } from "../../shared/util.js";
-import { InkEditor } from "./ink.js";
+import { AnnotationEditorType, AnnotationEditorParamsType, Util, shadow } from "../../shared/util.js";
+import { DrawingEditor, DrawingOptions } from "./draw.js";
 import { AnnotationEditor } from "./editor.js";
-import { DrawingOptions } from "./draw.js";
 import { BoxDrawOutliner } from "./drawers/boxdraw.js";
+import { BoxDrawOutline } from "./drawers/boxdraw.js";
+import { BasicColorPicker } from "./color_picker.js";
 
-class CoverInkEditor extends InkEditor {
+class CoverInkEditor extends DrawingEditor {
   static _type = "coverink";
   static _editorType = AnnotationEditorType.COVERINK;
+  static _defaultDrawingOptions = null;
   static _uiManager = null;
 
   constructor(params) {
     super({ ...params, name: "coverInkEditor" });
-    // Don't set defaultL10nId to avoid showing alert messages as text
     // Allow edge resizing in addition to corner resizing
     this._willKeepAspectRatio = false;
   }
 
   static initialize(l10n, uiManager) {
-    super.initialize(l10n, uiManager);
+    AnnotationEditor.initialize(l10n, uiManager);
     this._uiManager = uiManager;
     this._defaultDrawingOptions = new CoverInkDrawingOptions();
   }
@@ -42,12 +43,14 @@ class CoverInkEditor extends InkEditor {
   }
 
   static get typesMap() {
-    const map = new Map(super.typesMap);
-    map.delete(AnnotationEditorParamsType.INK_THICKNESS);
-    // Use fill instead of stroke for CoverInk
-    map.set(AnnotationEditorParamsType.INK_COLOR, "fill");
-    map.set(AnnotationEditorParamsType.INK_OPACITY, "fill-opacity");
-    return map;
+    return shadow(
+      this,
+      "typesMap",
+      new Map([
+        [AnnotationEditorParamsType.INK_COLOR, "fill"],
+        [AnnotationEditorParamsType.INK_OPACITY, "fill-opacity"],
+      ])
+    );
   }
 
   static get supportMultipleDrawings() {
@@ -58,11 +61,24 @@ class CoverInkEditor extends InkEditor {
     return new BoxDrawOutliner(x, y, parentWidth, parentHeight, rotation);
   }
 
+  static get defaultPropertiesToUpdate() {
+    const properties = [];
+    const options = this._defaultDrawingOptions;
+    for (const [type, name] of this.typesMap) {
+      properties.push([type, options[name]]);
+    }
+    return properties;
+  }
+
   get propertiesToUpdate() {
     return [
       [AnnotationEditorParamsType.INK_COLOR, this.color],
       [AnnotationEditorParamsType.INK_OPACITY, this.opacity],
     ];
+  }
+
+  get colorType() {
+    return AnnotationEditorParamsType.INK_COLOR;
   }
 
   get color() {
@@ -71,6 +87,11 @@ class CoverInkEditor extends InkEditor {
 
   get opacity() {
     return this._drawingOptions["fill-opacity"];
+  }
+
+  get toolbarButtons() {
+    this._colorPicker ||= new BasicColorPicker(this);
+    return [["colorPicker", this._colorPicker]];
   }
 
   createDrawingOptions({ color, opacity }) {
@@ -83,10 +104,21 @@ class CoverInkEditor extends InkEditor {
       "stroke-opacity": opacity,
       "stroke-width": 1,
     });
-    // Apply background color to the div element
+    // Apply background color to the div element immediately after div is rendered
     if (this.div) {
       this.#applyBackground(fillColor, opacity ?? 1);
     }
+  }
+
+  render() {
+    const div = super.render();
+    // Ensure background color is applied after div is rendered
+    if (this._drawingOptions) {
+      const fillColor = this._drawingOptions.fill || "#000000";
+      const opacity = this._drawingOptions["fill-opacity"] || 1;
+      this.#applyBackground(fillColor, opacity);
+    }
+    return div;
   }
 
   updateParams(type, value) {
@@ -140,13 +172,16 @@ class CoverInkEditor extends InkEditor {
       return this.serializeDeleted();
     }
     const { lines, points, rect } = this.serializeDraw(isForCopying);
-    const {
-      _drawingOptions: {
-        fill,
-        "fill-opacity": opacity,
-        "stroke-width": thickness = 1,
-      },
-    } = this;
+    
+    // Ensure fill color exists; if not, use the current drawing color
+    let fill = this._drawingOptions?.fill || this.color || "#000000";
+    if (!fill.startsWith("#")) {
+      fill = Util.makeHexColor(...fill);
+    }
+    
+    const opacity = this._drawingOptions?.["fill-opacity"] ?? this.opacity ?? 1;
+    const thickness = this._drawingOptions?.["stroke-width"] ?? 1;
+    
     const serialized = Object.assign(super.serialize(isForCopying), {
       // Persist as Ink annotation for compatibility
       annotationType: AnnotationEditorType.INK,
@@ -169,6 +204,37 @@ class CoverInkEditor extends InkEditor {
     }
     serialized.id = this.annotationElementId;
     return serialized;
+  }
+
+  static deserializeDraw(
+    pageX,
+    pageY,
+    pageWidth,
+    pageHeight,
+    innerMargin,
+    data
+  ) {
+    return BoxDrawOutline.deserialize(
+      pageX,
+      pageY,
+      pageWidth,
+      pageHeight,
+      innerMargin,
+      data
+    );
+  }
+
+  static async deserialize(data, parent, uiManager) {
+    // CoverInk annotations are saved as INK type, so we need to handle that
+    const editor = await super.deserialize(data, parent, uiManager);
+    if (editor) {
+      // Ensure the draw options are properly initialized with the current colors
+      editor.createDrawingOptions({
+        color: AnnotationEditor._colorManager.convert(data.color || [0, 0, 0]),
+        opacity: data.opacity || 1,
+      });
+    }
+    return editor;
   }
 }
 

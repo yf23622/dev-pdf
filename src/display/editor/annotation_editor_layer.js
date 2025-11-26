@@ -854,6 +854,12 @@ class AnnotationEditorLayer {
       return;
     }
 
+    // For drawer types that don't support multiple drawings, don't create
+    // a new editor - endDrawing will handle it
+    if (this.#currentEditorType?.isDrawer && !this.#currentEditorType.supportMultipleDrawings) {
+      return;
+    }
+
     if (!this.#allowClick) {
       this.#allowClick = true;
       return;
