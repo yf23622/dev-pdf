@@ -171,27 +171,36 @@ class CoverInkEditor extends DrawingEditor {
     if (this.deleted) {
       return this.serializeDeleted();
     }
-    const { lines, points, rect } = this.serializeDraw(isForCopying);
-    
-    // Ensure fill color exists; if not, use the current drawing color
+    const { rect } = this.serializeDraw(isForCopying);
+
+    // Use Highlight annotation with quadPoints so PDF has filled area
     let fill = this._drawingOptions?.fill || this.color || "#000000";
     if (!fill.startsWith("#")) {
       fill = Util.makeHexColor(...fill);
     }
-    
     const opacity = this._drawingOptions?.["fill-opacity"] ?? this.opacity ?? 1;
-    const thickness = this._drawingOptions?.["stroke-width"] ?? 1;
-    
+    const [x1, y1, x2, y2] = rect;
+    const quadPoints = [
+      x1, y2, // top-left
+      x2, y2, // top-right
+      x2, y1, // bottom-right
+      x1, y1, // bottom-left
+    ];
+
+    const outline = [
+      x1, y1,
+      x2, y1,
+      x2, y2,
+      x1, y2,
+    ];
+
     const serialized = Object.assign(super.serialize(isForCopying), {
-      // Persist as Ink annotation for compatibility
-      annotationType: AnnotationEditorType.INK,
+      annotationType: AnnotationEditorType.HIGHLIGHT,
       color: AnnotationEditor._colorManager.convert(fill),
-      opacity,
-      thickness,
-      paths: {
-        lines,
-        points,
-      },
+      opacity: 1,
+      blendMode: "Normal",
+      quadPoints,
+      outlines: [outline],
       rect,
     });
     this.addComment(serialized);

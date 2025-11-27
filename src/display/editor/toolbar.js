@@ -41,6 +41,7 @@ class EditorToolbar {
       freetext: "pdfjs-editor-remove-freetext-button",
       highlight: "pdfjs-editor-remove-highlight-button",
       ink: "pdfjs-editor-remove-ink-button",
+      coverink: "pdfjs-editor-remove-ink-button",
       stamp: "pdfjs-editor-remove-stamp-button",
       signature: "pdfjs-editor-remove-signature-button",
     });
@@ -134,7 +135,14 @@ class EditorToolbar {
     const button = document.createElement("button");
     button.classList.add("basic", "deleteButton");
     button.tabIndex = 0;
-    button.setAttribute("data-l10n-id", EditorToolbar.#l10nRemove[editorType]);
+    {
+      const l10nId = EditorToolbar.#l10nRemove[editorType];
+      if (l10nId) {
+        button.setAttribute("data-l10n-id", l10nId);
+      } else {
+        button.removeAttribute("data-l10n-id");
+      }
+    }
     if (this.#addListenersToElement(button)) {
       button.addEventListener(
         "click",

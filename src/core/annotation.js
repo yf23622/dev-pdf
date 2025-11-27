@@ -4783,12 +4783,13 @@ class InkAnnotation extends MarkupAnnotation {
     appearanceStreamDict.set("Resources", resources);
     const r0 = new Dict(xref);
     extGState.set("R0", r0);
-    r0.setIfName("BM", "Multiply");
+    const blend = annotation.blendMode || "Multiply";
+    r0.setIfName("BM", blend);
 
-    if (opacity !== 1) {
+    if (opacity !== undefined) {
       r0.set("ca", opacity);
-      r0.setIfName("Type", "ExtGState");
     }
+    r0.setIfName("Type", "ExtGState");
 
     const ap = new StringStream(appearance);
     ap.dict = appearanceStreamDict;
@@ -4927,12 +4928,12 @@ class HighlightAnnotation extends MarkupAnnotation {
     appearanceStreamDict.set("Resources", resources);
     const r0 = new Dict(xref);
     extGState.set("R0", r0);
-    r0.setIfName("BM", "Multiply");
-
-    if (opacity !== 1) {
+    const blend = annotation.blendMode || Name.get("Normal");
+    r0.setIfName("BM", blend);
+    if (opacity !== undefined) {
       r0.set("ca", opacity);
-      r0.setIfName("Type", "ExtGState");
     }
+    r0.setIfName("Type", "ExtGState");
 
     const ap = new StringStream(appearance);
     ap.dict = appearanceStreamDict;

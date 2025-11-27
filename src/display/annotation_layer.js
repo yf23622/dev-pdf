@@ -3523,6 +3523,15 @@ class HighlightAnnotationElement extends AnnotationElement {
     }
 
     this.container.classList.add("highlightAnnotation");
+    // Force opaque overlay for cover/highlight annotations
+    const { style } = this.container;
+    const { color, opacity } = this.data;
+    if (Array.isArray(color)) {
+      const [r, g, b] = color;
+      style.backgroundColor = `rgba(${r|0}, ${g|0}, ${b|0}, 1)`;
+      style.mixBlendMode = "normal";
+      // Clip path is applied in _createQuadrilaterals
+    }
     this._editOnDoubleClick();
 
     if (overlaidText) {

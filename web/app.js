@@ -98,6 +98,14 @@ import { SignatureManager } from "web-signature_manager";
 import { Toolbar } from "web-toolbar";
 import { ViewHistory } from "./view_history.js";
 
+const __origConsoleWarn = console.warn;
+console.warn = function (...args) {
+  if (typeof args[0] === "string" && args[0].includes("[fluent] Missing translations")) {
+    return;
+  }
+  return __origConsoleWarn.apply(console, args);
+};
+
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 
 const ViewOnLoad = {

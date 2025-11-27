@@ -82,6 +82,10 @@ class DrawingEditor extends AnnotationEditor {
 
   static #currentDrawingOptions = null;
 
+  static #isEnding = false;
+
+  static #selectionDiv = null;
+
   static _INNER_MARGIN = 3;
 
   constructor(params) {
@@ -798,6 +802,12 @@ class DrawingEditor extends AnnotationEditor {
       /* isPathUpdatable = */ true,
       /* hasClip = */ false
     ));
+
+    const sel = (DrawingEditor.#selectionDiv = document.createElement("div"));
+    sel.className = "selectionOverlay";
+    sel.style.position = "absolute";
+    sel.style.pointerEvents = "none";
+    parent.div.append(sel);
   }
 
   static _drawMove(event) {
@@ -815,10 +825,16 @@ class DrawingEditor extends AnnotationEditor {
       this._endDraw(event);
       return;
     }
-    this._currentParent.drawLayer.updateProperties(
-      this._currentDrawId,
-      DrawingEditor.#currentDraw.add(offsetX, offsetY)
-    );
+    const props = DrawingEditor.#currentDraw.add(offsetX, offsetY);
+    this._currentParent.drawLayer.updateProperties(this._currentDrawId, props);
+    const bbox = props?.bbox;
+    const sel = DrawingEditor.#selectionDiv;
+    if (bbox && sel) {
+      sel.style.left = `${100 * bbox[0]}%`;
+      sel.style.top = `${100 * bbox[1]}%`;
+      sel.style.width = `${100 * bbox[2]}%`;
+      sel.style.height = `${100 * bbox[3]}%`;
+    }
     // We track the timestamp to know if the touchmove event is used to draw.
     CurrentPointers.setTimeStamp(event.timeStamp);
     stopEvent(event);
@@ -832,6 +848,10 @@ class DrawingEditor extends AnnotationEditor {
       DrawingEditor.#currentDrawingOptions = null;
       CurrentPointers.clearPointerType();
       CurrentPointers.clearTimeStamp();
+      if (DrawingEditor.#selectionDiv) {
+        DrawingEditor.#selectionDiv.remove();
+        DrawingEditor.#selectionDiv = null;
+      }
     }
 
     if (DrawingEditor.#currentDrawingAC) {
@@ -885,8 +905,18 @@ class DrawingEditor extends AnnotationEditor {
     if (!parent) {
       return null;
     }
+    if (DrawingEditor.#isEnding) {
+      return null;
+    }
+    DrawingEditor.#isEnding = true;
     parent.toggleDrawing(true);
     parent.cleanUndoStack(AnnotationEditorParamsType.DRAW_STEP);
+
+    if (!DrawingEditor.#currentDraw) {
+      this._cleanup(true);
+      DrawingEditor.#isEnding = false;
+      return null;
+    }
 
     if (!DrawingEditor.#currentDraw.isEmpty()) {
       const {
@@ -910,11 +940,13 @@ class DrawingEditor extends AnnotationEditor {
         }
       );
       this._cleanup(true);
+      DrawingEditor.#isEnding = false;
       return editor;
     }
 
     parent.drawLayer.remove(this._currentDrawId);
     this._cleanup(true);
+    DrawingEditor.#isEnding = false;
     return null;
   }
 

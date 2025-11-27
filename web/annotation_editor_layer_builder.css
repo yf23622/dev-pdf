@@ -160,6 +160,24 @@
   }
 }
 
+/* Ensure CoverInk overlays still block pointer events when layer is disabled */
+.annotationEditorLayer.disabled .coverInkEditor {
+  pointer-events: auto;
+}
+
+/* Keep CoverInk overlays above text selections */
+.annotationEditorLayer .coverInkEditor {
+  z-index: 100000;
+}
+
+.annotationEditorLayer .selectionOverlay {
+  position: absolute;
+  border: 2px dashed var(--outline-color);
+  background: transparent;
+  pointer-events: none;
+  z-index: 100001;
+}
+
 .annotationEditorLayer.freetextEditing {
   cursor: var(--editorFreeText-editing-cursor);
 }

@@ -327,6 +327,7 @@ class BasicColorPicker {
     BasicColorPicker.#l10nColor ||= Object.freeze({
       freetext: "pdfjs-editor-color-picker-free-text-input",
       ink: "pdfjs-editor-color-picker-ink-input",
+      coverink: "pdfjs-editor-color-picker-ink-input",
     });
   }
 
@@ -340,7 +341,14 @@ class BasicColorPicker {
     input.value = color || "#000000";
     input.className = "basicColorPicker";
     input.tabIndex = 0;
-    input.setAttribute("data-l10n-id", BasicColorPicker.#l10nColor[editorType]);
+    {
+      const l10nId = BasicColorPicker.#l10nColor[editorType];
+      if (l10nId) {
+        input.setAttribute("data-l10n-id", l10nId);
+      } else {
+        input.removeAttribute("data-l10n-id");
+      }
+    }
     input.addEventListener(
       "input",
       () => {
