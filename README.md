@@ -1,3 +1,13 @@
+# Project Overview
+
+This repository is a fork of PDF.js with additional, project-specific enhancements built on top of the original PDF.js codebase. Key added features include:
+
+- Rectangle-based cover/redaction tools for masking content on PDF pages.
+- A filled overlay drawing tool (CoverInk) and other drawing/editing tools.
+- Serialization and save/export support so annotation and cover layers are preserved when saving the PDF.
+
+See the `src/` directory for the implementation details of the editors and drawing layers.
+
 # PDF.js [![CI](https://github.com/mozilla/pdf.js/actions/workflows/ci.yml/badge.svg?query=branch%3Amaster)](https://github.com/mozilla/pdf.js/actions/workflows/ci.yml?query=branch%3Amaster)
 
 [PDF.js](https://mozilla.github.io/pdf.js/) is a Portable Document Format (PDF) viewer that is built with HTML5.
